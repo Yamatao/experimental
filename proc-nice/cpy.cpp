@@ -1,19 +1,29 @@
-#include <fstream>
-#include <iostream>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include <unistd.h>
 #include <chrono>
+#include <string>
+#include <iostream>
 
 int main(int argc, char **argv) {
-	printf("PID %u\n", (unsigned)getpid());
+	std::cout << "PID " << getpid() << std::endl;
 
 	std::string name = argv[1];
+	unsigned int seed = 0;
+	
+	FILE* urandom = fopen("/dev/urandom", "r");
+	fread(&seed, sizeof(int), 1, urandom);
+	fclose(urandom);
+	srand(seed);
 
+	std::cout << "Rand " << rand() << std::endl; 
 	std::string prefix = std::to_string(rand());
 	
 	auto start = std::chrono::steady_clock::now();
-	
+ 	
 	int idx = 0;
-	for (int j = 0; j < 6; j++) {
+	for (int j = 0; j < 4; j++) {
 		// input
 		std::string fname;
 	        if (idx == 0) {
@@ -22,20 +32,23 @@ int main(int argc, char **argv) {
 			fname = "tmp/" + prefix + "_" + std::to_string(idx) + ".txt";
 		}
 
-		std::ifstream ifs(fname, std::ios_base::binary);
-		size_t sz = 0;
-		if (!ifs.is_open()) {
-			std::cout << "Error opening " << fname << "\n";
+		std::cout << "Reading from " << fname << std::endl;
+		int ifile = open(fname.c_str(), O_RDONLY | O_DIRECT, S_IRWXU | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
+		if (ifile == -1) {
+			std::cout << "Error opening " << fname << " for read\n";
 			return 1;
 		}
 
-		ifs.seekg(0, std::ios_base::end);
-		sz = ifs.tellg();
-		ifs.seekg(0, std::ios_base::beg);
+		size_t sz = lseek(ifile, 0, SEEK_END);
+		lseek(ifile, 0, SEEK_SET);
 		
 		char *mem = new char[sz];
-		ifs.read(mem, sz);
-		ifs.close();
+		ssize_t rd = read(ifile, mem, sz);
+		if (rd < sz) {
+			std::cout << "Failed to read " << fname << ", only " << rd << " bytes read" << std::endl;
+			return 1;
+		}
+		close(ifile);
 
 		// output
 		idx++;
@@ -44,31 +57,33 @@ int main(int argc, char **argv) {
 
 		fname = "tmp/" + prefix + "_" + std::to_string(idx) + ".txt";
 		//std::cout << "Writing to " << fname << std::endl;
-		std::cout << "." << std::endl;
 
-		std::ofstream ofs(fname, std::ios_base::binary);
-		if (!ofs.is_open()) {
+		int ofile = open(fname.c_str(), O_WRONLY | O_CREAT, S_IRWXU | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
+		if (ofile == -1) {
 			std::cout << "Error opening " << fname << " for write\n";
 			return 1;
 		}
 
-		static const int Step = 800;
-		for (int i = 0; i < 2; i++) {
+		static const int Step = 4000;
 		for (char * pos = mem; pos < mem + sz; pos += Step) {
+			ssize_t wr = 0;
 			if (pos + Step < mem + sz) {
-				ofs.write(pos, Step);
+				wr = write(ofile, pos, Step);
 			} else {
-				ofs.write(pos, mem + sz - pos - 1);
+				wr = write(ofile, pos, mem + sz - pos);
 			}
+			if (wr == -1) {
+				std::cout << "Error writing " << fname << ", only " << wr << " bytes written" << std::endl;
+				return 1;
+			}
+			fsync(ofile);
 		}
-		}
-		ofs.close();
+		close(ofile);
 		
 		delete mem;
 	}
 
 	auto end = std::chrono::steady_clock::now();
-	std::cout << "\n" << name << " finished\n";
-	std::cout << "\nTime: " << std::chrono::duration_cast<std::chrono::seconds>(end - start).count() << "sec\n";
+	std::cout << "\n" << name << " finished in " << std::chrono::duration_cast<std::chrono::seconds>(end - start).count() << "sec\n";
 	return 0;
 }

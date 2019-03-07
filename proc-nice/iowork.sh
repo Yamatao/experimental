@@ -1,5 +1,6 @@
 mkdir tmp
 
+./a.out idle_0 &
 ./a.out idle_1 &
 pid1=$!
 echo "pid1=$pid1"

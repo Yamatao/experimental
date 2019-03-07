@@ -15,12 +15,14 @@ int main(int argc, char **argv) {
 	fclose(urandom);
 	srand(seed);
 
+	std::cout << name << ": pid=" << getpid() << std::endl;
+
 	std::string prefix = std::to_string(rand());
 	
 	auto start = std::chrono::steady_clock::now();
  	
 	int idx = 0;
-	for (int j = 0; j < 8; j++) {
+	for (int j = 0; j < 7; j++) {
 		// input
 		std::string fname;
 	        if (idx == 0) {
@@ -29,7 +31,7 @@ int main(int argc, char **argv) {
 			fname = "tmp/" + prefix + "_" + std::to_string(idx) + ".txt";
 		}
 
-		std::cout << "Copying file " << fname << std::endl;
+		std::cout << name << ": Copying file " << fname << std::endl;
 		int ifile = open(fname.c_str(), O_RDONLY | O_DIRECT, S_IRWXU | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
 		if (ifile == -1) {
 			std::cout << "Error opening " << fname << " for read\n";

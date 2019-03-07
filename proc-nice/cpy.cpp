@@ -20,7 +20,7 @@ int main(int argc, char **argv) {
 	auto start = std::chrono::steady_clock::now();
  	
 	int idx = 0;
-	for (int j = 0; j < 4; j++) {
+	for (int j = 0; j < 8; j++) {
 		// input
 		std::string fname;
 	        if (idx == 0) {
@@ -73,7 +73,11 @@ int main(int argc, char **argv) {
 				std::cout << "Error writing " << fname << ", only " << wr << " bytes written" << std::endl;
 				return 1;
 			}
-			fsync(ofile);
+			int ret = fsync(ofile);
+			if (ret != 0) {
+				std::cout << "Failed to fsync" << std::endl;
+				return 1;
+			}
 		}
 		close(ofile);
 		

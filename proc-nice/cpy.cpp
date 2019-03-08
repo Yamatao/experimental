@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <chrono>
 #include <string>
+#include <thread>
 #include <iostream>
 
 int main(int argc, char **argv) {
@@ -15,14 +16,16 @@ int main(int argc, char **argv) {
 	fclose(urandom);
 	srand(seed);
 
-	std::cout << name << ": pid=" << getpid() << std::endl;
+	std::cout << name << ": PID " << getpid() << std::endl;
 
 	std::string prefix = std::to_string(rand());
+
+	std::this_thread::sleep_for(std::chrono::milliseconds(rand() % 2000));
 	
 	auto start = std::chrono::steady_clock::now();
  	
 	int idx = 0;
-	for (int j = 0; j < 7; j++) {
+	for (int j = 0; j < 5; j++) {
 		// input
 		std::string fname;
 	        if (idx == 0) {

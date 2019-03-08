@@ -1,20 +1,15 @@
 mkdir tmp
 
-./a.out idle_0 &
-./a.out idle_1 &
-pid1=$!
-echo "pid1=$pid1"
-
-./a.out idle_2 &
-pid2="$!"
-echo "pid2=$pid2"
+for i in {1..30}; do
+	./a.out idle_$i &
+	pid=$!
+	ionice -c 3 -p $pid # idle class
+	ionice -p $pid
+done
 
 ./a.out realtime_1 &
-pid3="$!"
-echo "pid3=$pid3"
-
-ionice -c 3 -p $pid1 # idle class
-ionice -c 3 -p $pid2 # idle class
-ionice -c 1 -p $pid3 # realtime class
+pid="$!"
+ionice -c 1 -n 0 -p $pid # realtime class
+ionice -p $pid
 
 sleep 60

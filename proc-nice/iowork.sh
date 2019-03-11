@@ -1,15 +1,17 @@
-mkdir tmp
+#!/usr/bin/env bash
 
-for i in {1..30}; do
-	./a.out idle_$i &
-	pid=$!
-	ionice -c 3 -p $pid # idle class
-	ionice -p $pid
-done
+# idle
+ionice -c 3 dd if=/dev/zero of=kek1.txt bs=1M count=800 oflag=direct 2>time_1 &
+ionice -c 3 dd if=/dev/zero of=kek2.txt bs=1M count=800 oflag=direct 2>time_2 &
+ionice -c 3 dd if=/dev/zero of=kek3.txt bs=1M count=800 oflag=direct 2>time_3 &
+ionice -c 3 dd if=/dev/zero of=kek4.txt bs=1M count=800 oflag=direct 2>time_4 &
 
-./a.out realtime_1 &
-pid="$!"
-ionice -c 1 -n 0 -p $pid # realtime class
-ionice -p $pid
+# realtime
+ionice -c 1 dd if=/dev/zero of=kekr.txt bs=1M count=800 oflag=direct 2>time_r &
 
-sleep 60
+wait
+
+echo "Time of an 'idle' class process:"
+cat time_1
+echo "Time of a 'realtime' class process:"
+cat time_r
